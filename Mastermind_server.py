@@ -41,52 +41,62 @@ def server():
         tcpconnsocket, address = serversocket.accept()
         print("Connection from: " + str(address))
         while True:
+            answer = ""
+            tested = [False,False,False,False]
+            for k in range(4):
+                rand = random.randint(0,5)
+                if(rand == 0): answer += "R"
+                elif(rand == 1): answer += "B"
+                elif(rand == 2): answer += "G"
+                elif(rand == 3): answer += "O"
+                elif(rand == 4): answer += "Y"
+                elif(rand == 5): answer += "P"
+            
+            
+            
+            tcpconnsocket.send(answer.encode())
+            
             guess = (str(tcpconnsocket.recv(1024).decode()))
             if not guess:
                 break        
             print("from connected user: " + guess)
-            answer = []
-            for k in range(4):
-                rand = random.randint(0,5)
-                if(rand == 0): answer.append(Peg("red", "R", False))
-                elif(rand == 1): answer.append(Peg("blue", "B", False))
-                elif(rand == 2): answer.append(Peg("green", "G", False))
-                elif(rand == 3): answer.append(Peg("orange", "O", False))
-                elif(rand == 4): answer.append(Peg("yellow", "Y", False))
-                elif(rand == 5): answer.append(Peg("pink", "P", False))
             
-            attempts = 9
+            attempts = 10
             for k in range(10):
-                start = "You have: " + str(attempts) + " left.\nEnter a guess containing any 4 of the following: R, B, G, O, Y, P"
-                tcpconnsocket.send(start.encode())
-                tcpconnsocket.shutdown(socket.SHUT_WR)
+                for i in range(4):
+                    tested[i] = False
+                
                 guess = guess.strip().upper()
                 response = ""
-                for i in range(4):
-                    answer[i].setTest(False)
+
                 for j in range(4):
-                    if((answer[j].getID() in guess) and not(guess[j] == answer[j].getID()) and not(answer[j].getTest())):
-                        response += "W"
-                        answer[j].setTest(True)
-                    elif(guess[j] == answer[j].getID() and not(answer[j].getTest())):
+                    if(guess[j] == answer[j] and tested[j] == False):
                         response += "B"
-                        answer[j].setTest(True)
+                        tested[j] = True
+                    elif(guess[j] in answer and tested[j]== False):
+                        response += "W"
+                        tested[j] = True
+                    else:
+                        response += "X"
+                        tested[j] = True
                         
                 tcpconnsocket.send((shuffle(response).encode()))
+                
                 attempts -= 1
                 if(response == "BBBB"):
                     tcpconnsocket.send(("Congratulations, you guessed the pattern").encode())
                     break
                 elif(attempts == 0):
-                    tcpconnsocket.send(("You have used up all your attemots.").encode())
+                    tcpconnsocket.send(("You have used up all your attempts. Answer: " + answer).encode())
                     break
-                tcpconnsocket.close()      
+                tcpconnsocket.send(("You have: " + str(attempts) + " left.\nEnter a guess containing any 4 of the following: R, B, G, O, Y, P").encode())
+                guess = (str(tcpconnsocket.recv(1024).decode()))
+            tcpconnsocket.close()      
             serversocket.close()
             
 def shuffle(s):
-    chars = ""
-    for c in s:
-        chars += c
-    return chars
+    result = "".join(random.sample(s, len(s)))
+    return result
+
 if __name__ == "__main__":
     server()
