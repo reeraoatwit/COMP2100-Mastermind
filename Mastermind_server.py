@@ -10,10 +10,9 @@ import random
 def mastermind(socket):
     tcpconnsocket = socket
     answer = ""
-    tested = [False,False,False,False]
     validletters = ['R', 'B', 'G', 'O', 'Y', 'P']
-        
-    for k in range(4): # Generate random string of colored pegs
+
+    for k in range(4): # Generate random string of colored pegs as answer
         rand = random.randint(0,5)
         if(rand == 0): answer += validletters[0]
         elif(rand == 1): answer += validletters[1]
@@ -22,18 +21,13 @@ def mastermind(socket):
         elif(rand == 4): answer += validletters[4]
         elif(rand == 5): answer += validletters[5]
 
-        
     guess = tcpconnsocket.recv(1024).decode()
     if not guess:
-        return  
-    print("from connected user: " + guess)
+        return
         
     attempts = 10
-    while(attempts > 1):
-        for i in range(4):
-            tested[i] = False
-            
-        guess = guess.strip().upper()
+    while(attempts > 0):
+        guess = guess.strip().upper() # Simplify guess string if any whitespace and change to uppercase
         response = ["", "", "", ""]
             
         invalid = False
@@ -50,39 +44,28 @@ def mastermind(socket):
             guess = tcpconnsocket.recv(1024).decode()
             attempts += 1
             continue
-                
-        for j in range(4): # Calculates response peg colors based on correctness of guess
-            if(guess[j] == answer[j] and tested[j] == False):
-                response[j] = "B" # Black if right color and right place
-                tested[j] = True
-            elif(guess[j] in answer and tested[j] == False):
-                if(j>0):
-                    for i in range(j):
-                        if(guess[i] == guess[j] and tested[i]):
-                            response[j] = ""
-                else:
-                    if(answer.index(guess[j]) > 0):
-                        response[j] = ""
-                if(response[j] != ""):
-                    response[j] = "W"
-                tested[j] = True
-            else:
-                response[j] = "" # X if wrong color
-                tested[j] = True
         
-        response = shuffle("".join(response))
+        # Generate response string as hint
+        for i in range(4):
+            if(guess[i] == answer[i]):
+                response[i] = "B"
+        for i in range(4):
+            if(response[i] != "B" and guess[i] in answer and response[answer.index(guess[i])] != "B"):
+                response[i] = "W"
+        
+        response = shuffle("".join(response)) # Shuffle response string so player doesn't know which pegs are correct
         
         attempts -= 1
         if(response == "BBBB"):
             response += "\nCongratulations, you guessed the pattern\nGoodbye!"
         else:
-            response += " You have: " + str(attempts) + " attempts left.\nEnter a guess containing any 4 of the following: R, B, G, O, Y, P"
+            response += "\nYou have: " + str(attempts) + " attempts left.\nEnter a guess containing any 4 of the following: R, B, G, O, Y, P"
             
         tcpconnsocket.send(response.encode())
-        if(response.endswith("!")):
+        if(response.endswith("!")): # If pattern guessed correctly, stop turns
             break
         
-        guess = tcpconnsocket.recv(1024).decode()
+        guess = tcpconnsocket.recv(1024).decode() # Recieve new guess from player
     
     if(attempts == 0):
         tcpconnsocket.send(("\nYou have used up all your attempts. Answer: " + answer + " " + "\nGoodbye!").encode())
@@ -103,6 +86,8 @@ def server():
 def shuffle(s): # Shuffles characters around in a string
     result = "".join(random.sample(s, len(s)))
     return result
+
+
 
 if __name__ == "__main__":
     server()
