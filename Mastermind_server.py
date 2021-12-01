@@ -42,7 +42,6 @@ def mastermind(socket):
         if(invalid):
             tcpconnsocket.send(("Invalid response, try again").encode())
             guess = tcpconnsocket.recv(1024).decode()
-            attempts += 1
             continue
         
         # Generate response string as hint
