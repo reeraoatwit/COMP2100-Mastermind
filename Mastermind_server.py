@@ -54,13 +54,13 @@ def mastermind(socket):
         
         response = shuffle("".join(response)) # Shuffle response string so player doesn't know which pegs are correct
         
-        attempts -= 1
         if(response == "BBBB"):
             response += "\nCongratulations, you guessed the pattern\nGoodbye!"
         else:
             response += "\nYou have: " + str(attempts) + " attempts left.\nEnter a guess containing any 4 of the following: R, B, G, O, Y, P"
             
         tcpconnsocket.send(response.encode())
+        attempts -= 1
         if(response.endswith("!")): # If pattern guessed correctly, stop turns
             break
         
